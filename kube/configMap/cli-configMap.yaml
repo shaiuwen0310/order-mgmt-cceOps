@@ -1,0 +1,20 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: tools-cli
+  namespace: bc-2nd
+  annotations:
+    description: ''
+data:
+  CORE_PEER_ADDRESS: 'peer0-org1:7051'
+  CORE_PEER_ID: cli
+  CORE_PEER_LOCALMSPID: Org1MSP
+  CORE_PEER_MSPCONFIGPATH: /opt/hyperledger/fabric/crypto/peerOrganizations/org1.company.com/users/Admin0@org1.company.com/msp
+  CORE_PEER_TLS_CERT_FILE: /opt/hyperledger/fabric/crypto/peerOrganizations/org1.company.com/peers/peer0-org1/tls/server.crt
+  CORE_PEER_TLS_ENABLED: 'true'
+  CORE_PEER_TLS_KEY_FILE: /opt/hyperledger/fabric/crypto/peerOrganizations/org1.company.com/peers/peer0-org1/tls/server.key
+  CORE_PEER_TLS_ROOTCERT_FILE: /opt/hyperledger/fabric/crypto/peerOrganizations/org1.company.com/peers/peer0-org1/tls/ca.crt
+  FABRIC_LOGGING_SPEC: INFO
+  TZ: Asia/Taipei
+
+---

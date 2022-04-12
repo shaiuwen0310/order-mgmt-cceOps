@@ -1,0 +1,118 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: tools-cli
+  namespace: bc-2nd
+  labels:
+    appgroup: ''
+    version: v1
+  annotations:
+    description: ''
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tools-cli
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: tools-cli
+        version: v1
+    spec:
+      volumes:
+        - name: cce-obs-order-mgmt-fixed
+          persistentVolumeClaim:
+            claimName: cce-obs-order-mgmt-fixed
+        - name: cce-obs-order-mgmt-variable
+          persistentVolumeClaim:
+            claimName: cce-obs-order-mgmt-variable
+        - name: cce-obs-order-mgmt-deletable
+          persistentVolumeClaim:
+            claimName: cce-obs-order-mgmt-deletable
+      containers:
+        - name: tools-cli
+          image: 'swr.cn-east-2.myhuaweicloud.com/diveotech/fabric-tools:2.2.4'
+          command:
+            - /bin/bash
+          args:
+            - '-c'
+            - while true; do sleep 3600; done
+          workingDir: /opt/hyperledger/fabric
+          env:
+            - name: CORE_PEER_ADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: tools-cli
+                  key: CORE_PEER_ADDRESS
+            - name: CORE_PEER_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: tools-cli
+                  key: CORE_PEER_ID
+            - name: CORE_PEER_LOCALMSPID
+              valueFrom:
+                configMapKeyRef:
+                  name: tools-cli
+                  key: CORE_PEER_LOCALMSPID
+            - name: CORE_PEER_MSPCONFIGPATH
+              valueFrom:
+                configMapKeyRef:
+                  name: tools-cli
+                  key: CORE_PEER_MSPCONFIGPATH
+            - name: CORE_PEER_TLS_CERT_FILE
+              valueFrom:
+                configMapKeyRef:
+                  name: tools-cli
+                  key: CORE_PEER_TLS_CERT_FILE
+            - name: CORE_PEER_TLS_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: tools-cli
+                  key: CORE_PEER_TLS_ENABLED
+            - name: CORE_PEER_TLS_KEY_FILE
+              valueFrom:
+                configMapKeyRef:
+                  name: tools-cli
+                  key: CORE_PEER_TLS_KEY_FILE
+            - name: CORE_PEER_TLS_ROOTCERT_FILE
+              valueFrom:
+                configMapKeyRef:
+                  name: tools-cli
+                  key: CORE_PEER_TLS_ROOTCERT_FILE
+            - name: FABRIC_LOGGING_SPEC
+              valueFrom:
+                configMapKeyRef:
+                  name: tools-cli
+                  key: FABRIC_LOGGING_SPEC
+            - name: TZ
+              valueFrom:
+                configMapKeyRef:
+                  name: tools-cli
+                  key: TZ
+          resources: {}
+          volumeMounts:
+            - name: cce-obs-order-mgmt-fixed
+              mountPath: /opt/hyperledger/fabric/crypto
+              subPath: organizations
+            - name: cce-obs-order-mgmt-variable
+              mountPath: /opt/hyperledger/fabric/scripts
+              subPath: shell/cli-scripts
+            - name: cce-obs-order-mgmt-fixed
+              mountPath: /opt/hyperledger/fabric/channel-artifacts
+              subPath: gen-file/channel-artifacts
+            - name: cce-obs-order-mgmt-variable
+              mountPath: /opt/hyperledger/fabric/external-chaincode
+              subPath: external-chaincode
+          imagePullPolicy: IfNotPresent
+      imagePullSecrets:
+        - name: default-secret
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - 192.168.9.24

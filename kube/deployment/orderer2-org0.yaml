@@ -1,0 +1,199 @@
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: orderer2-org0
+  labels:
+    app: orderer2-org0
+  namespace: bc-2nd
+  annotations: {}
+spec:
+  selector:
+    app: orderer2-org0
+  ports:
+    - name: cce-service-0
+      targetPort: 9050
+      port: 9050
+      protocol: TCP
+    - name: cce-service-1
+      targetPort: 19050
+      port: 19050
+      protocol: TCP
+  type: ClusterIP
+
+---
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: orderer2-org0
+  namespace: bc-2nd
+  labels:
+    appgroup: ''
+    version: v1
+  annotations:
+    description: ''
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orderer2-org0
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: orderer2-org0
+        version: v1
+    spec:
+      volumes:
+        - name: cce-obs-order-mgmt-fixed
+          persistentVolumeClaim:
+            claimName: cce-obs-order-mgmt-fixed
+        - name: cce-obs-order-mgmt-variable
+          persistentVolumeClaim:
+            claimName: cce-obs-order-mgmt-variable
+        - name: cce-obs-order-mgmt-deletable
+          persistentVolumeClaim:
+            claimName: cce-obs-order-mgmt-deletable
+      initContainers:
+        - name: init-copymeta
+          image: 'busybox:musl'
+          command:
+            - /bin/sh
+          args:
+            - '-c'
+            - cp -rf /etc/organizations/ordererOrganizations/org0.company.com/orderers/orderer2-org0/* /var/hyperledger/orderer && cp -rf /etc/config/genesis.block /var/hyperledger/orderer/orderer.genesis.block && sleep 10
+          resources: {}
+          volumeMounts:
+            - name: cce-obs-order-mgmt-deletable
+              mountPath: /var/hyperledger/orderer
+              subPath: meta/org0/orderer2-org0
+            - name: cce-obs-order-mgmt-fixed
+              mountPath: /etc/organizations
+              subPath: organizations
+            - name: cce-obs-order-mgmt-fixed
+              mountPath: /etc/config
+              subPath: gen-file/system-genesis-block
+      containers:
+        - name: orderer2-org0
+          image: 'swr.cn-east-2.myhuaweicloud.com/diveotech/fabric-orderer:2.2.4'
+          command:
+            - orderer
+          # command:
+          #   - /bin/sh
+          #   - '-c'
+          #   - sleep 10000
+          workingDir: /opt/gopath/src/github.com/hyperledger/fabric
+          env:
+            - name: FABRIC_LOGGING_SPEC
+              valueFrom:
+                configMapKeyRef:
+                  name: orderer-base
+                  key: FABRIC_LOGGING_SPEC
+            - name: ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE
+              valueFrom:
+                configMapKeyRef:
+                  name: orderer-base
+                  key: ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE
+            - name: ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY
+              valueFrom:
+                configMapKeyRef:
+                  name: orderer-base
+                  key: ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY
+            - name: ORDERER_GENERAL_CLUSTER_ROOTCAS
+              valueFrom:
+                configMapKeyRef:
+                  name: orderer-base
+                  key: ORDERER_GENERAL_CLUSTER_ROOTCAS
+            - name: ORDERER_GENERAL_GENESISFILE
+              valueFrom:
+                configMapKeyRef:
+                  name: orderer-base
+                  key: ORDERER_GENERAL_GENESISFILE
+            - name: ORDERER_GENERAL_GENESISMETHOD
+              valueFrom:
+                configMapKeyRef:
+                  name: orderer-base
+                  key: ORDERER_GENERAL_GENESISMETHOD
+            - name: ORDERER_GENERAL_LISTENADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: orderer-base
+                  key: ORDERER_GENERAL_LISTENADDRESS
+            - name: ORDERER_GENERAL_LOCALMSPDIR
+              valueFrom:
+                configMapKeyRef:
+                  name: orderer-base
+                  key: ORDERER_GENERAL_LOCALMSPDIR
+            - name: ORDERER_GENERAL_LOCALMSPID
+              valueFrom:
+                configMapKeyRef:
+                  name: orderer-base
+                  key: ORDERER_GENERAL_LOCALMSPID
+            - name: ORDERER_GENERAL_TLS_CERTIFICATE
+              valueFrom:
+                configMapKeyRef:
+                  name: orderer-base
+                  key: ORDERER_GENERAL_TLS_CERTIFICATE
+            - name: ORDERER_GENERAL_TLS_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: orderer-base
+                  key: ORDERER_GENERAL_TLS_ENABLED
+            - name: ORDERER_GENERAL_TLS_PRIVATEKEY
+              valueFrom:
+                configMapKeyRef:
+                  name: orderer-base
+                  key: ORDERER_GENERAL_TLS_PRIVATEKEY
+            - name: ORDERER_GENERAL_TLS_ROOTCAS
+              valueFrom:
+                configMapKeyRef:
+                  name: orderer-base
+                  key: ORDERER_GENERAL_TLS_ROOTCAS
+            - name: TZ
+              valueFrom:
+                configMapKeyRef:
+                  name: orderer-base
+                  key: TZ
+            - name: ORDERER_GENERAL_LISTENPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: orderer2-org0
+                  key: ORDERER_GENERAL_LISTENPORT
+            - name: ORDERER_METRICS_PROVIDER
+              valueFrom:
+                configMapKeyRef:
+                  name: orderer2-org0
+                  key: ORDERER_METRICS_PROVIDER
+            - name: ORDERER_OPERATIONS_LISTENADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: orderer2-org0
+                  key: ORDERER_OPERATIONS_LISTENADDRESS
+          resources: {}
+          volumeMounts:
+            - name: cce-obs-order-mgmt-fixed
+              mountPath: /var/hyperledger/production/orderer
+              subPath: backup/org0/orderer2-org0
+            - name: cce-obs-order-mgmt-deletable
+              mountPath: /var/hyperledger/orderer
+              subPath: meta/org0/orderer2-org0
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - '-c'
+                  - rm -rf /var/hyperledger/orderer
+          imagePullPolicy: IfNotPresent
+      imagePullSecrets:
+        - name: default-secret
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - 192.168.9.24

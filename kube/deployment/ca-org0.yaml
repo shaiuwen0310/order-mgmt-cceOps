@@ -1,0 +1,110 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ca-org0
+  labels:
+    app: ca-org0
+  namespace: bc-2nd
+  annotations: {}
+spec:
+  selector:
+    app: ca-org0
+  ports:
+    - name: cce-service-0
+      targetPort: 7054
+      port: 7054
+      protocol: TCP
+    - name: cce-service-1
+      targetPort: 17054
+      port: 17054
+      protocol: TCP
+  type: ClusterIP
+
+---
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: ca-org0
+  namespace: bc-2nd
+  labels:
+    appgroup: ''
+    version: v1
+  annotations:
+    description: ''
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ca-org0
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: ca-org0
+        version: v1
+    spec:
+      volumes:
+        - name: cce-obs-order-mgmt-fixed
+          persistentVolumeClaim:
+            claimName: cce-obs-order-mgmt-fixed
+        - name: cce-obs-order-mgmt-variable
+          persistentVolumeClaim:
+            claimName: cce-obs-order-mgmt-variable
+      containers:
+        - name: ca-org0
+          image: 'swr.cn-east-2.myhuaweicloud.com/diveotech/fabric-ca:1.5.2'
+          command:
+            - sh
+          args:
+            - '-c'
+            - 'fabric-ca-server start -b admin0:adminpw0 -d'
+          env:
+            - name: FABRIC_CA_HOME
+              valueFrom:
+                configMapKeyRef:
+                  name: ca-org0
+                  key: FABRIC_CA_HOME
+            - name: FABRIC_CA_SERVER_CA_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: ca-org0
+                  key: FABRIC_CA_SERVER_CA_NAME
+            - name: FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: ca-org0
+                  key: FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS
+            - name: FABRIC_CA_SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: ca-org0
+                  key: FABRIC_CA_SERVER_PORT
+            - name: TZ
+              valueFrom:
+                configMapKeyRef:
+                  name: ca-org0
+                  key: TZ
+          resources: {}
+          volumeMounts:
+            - name: cce-obs-order-mgmt-fixed
+              mountPath: /etc/hyperledger/fabric-ca-server
+              subPath: backup/org0/ca-org0
+            - name: cce-obs-order-mgmt-fixed
+              mountPath: /etc/organizations
+              subPath: organizations
+            - name: cce-obs-order-mgmt-variable
+              mountPath: /etc/scripts
+              subPath: shell/ca
+          imagePullPolicy: IfNotPresent
+      imagePullSecrets:
+        - name: default-secret
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - 192.168.9.24

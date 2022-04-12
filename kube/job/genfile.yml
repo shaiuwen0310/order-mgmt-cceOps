@@ -1,0 +1,54 @@
+kind: Job
+apiVersion: batch/v1
+metadata:
+  name: genfile
+  namespace: bc-2nd
+  labels:
+    job-name: genfile
+  annotations:
+    description: ''
+spec:
+  parallelism: 1
+  completions: 1
+  backoffLimit: 6
+  selector:
+    matchLabels:
+  template:
+    metadata:
+      name: genfile
+      labels:
+        job-name: genfile
+    spec:
+      volumes:
+        - name: cce-obs-order-mgmt-fixed
+          persistentVolumeClaim:
+            claimName: cce-obs-order-mgmt-fixed
+        - name: cce-obs-order-mgmt-variable
+          persistentVolumeClaim:
+            claimName: cce-obs-order-mgmt-variable
+      containers:
+        - name: genfile
+          image: 'swr.cn-east-2.myhuaweicloud.com/diveotech/fabric-tools:2.2.4'
+          command:
+            - /bin/sh
+          args:
+            - '-c'
+            - sh /etc/scripts/genfile-shell.sh
+          resources: {}
+          volumeMounts:
+            - name: cce-obs-order-mgmt-variable
+              mountPath: /etc/config
+              subPath: config
+            - name: cce-obs-order-mgmt-variable
+              mountPath: /etc/scripts
+              subPath: shell/genfile
+            - name: cce-obs-order-mgmt-fixed
+              mountPath: /etc/organizations
+              subPath: organizations
+            - name: cce-obs-order-mgmt-fixed
+              mountPath: /etc/genfile
+              subPath: gen-file
+          imagePullPolicy: IfNotPresent
+      restartPolicy: OnFailure
+      imagePullSecrets:
+        - name: default-secret

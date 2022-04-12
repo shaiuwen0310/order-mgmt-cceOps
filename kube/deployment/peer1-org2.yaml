@@ -1,0 +1,217 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: peer1-org2
+  labels:
+    app: peer1-org2
+  namespace: bc-2nd
+  annotations: {}
+spec:
+  selector:
+    app: peer1-org2
+  ports:
+    - name: cce-service-0
+      targetPort: 10051
+      port: 10051
+      protocol: TCP
+    - name: cce-service-1
+      targetPort: 20051
+      port: 20051
+      protocol: TCP
+  type: ClusterIP
+
+---
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: peer1-org2
+  namespace: bc-2nd
+  labels:
+    appgroup: ''
+    version: v1
+  annotations:
+    description: ''
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: peer1-org2
+      version: v1
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: peer1-org2
+        version: v1
+    spec:
+      volumes:
+        - name: cce-obs-order-mgmt-fixed
+          persistentVolumeClaim:
+            claimName: cce-obs-order-mgmt-fixed
+        - name: cce-obs-order-mgmt-variable
+          persistentVolumeClaim:
+            claimName: cce-obs-order-mgmt-variable
+        - name: cce-obs-order-mgmt-deletable
+          persistentVolumeClaim:
+            claimName: cce-obs-order-mgmt-deletable
+      initContainers:
+        - name: init-copymeta
+          image: 'busybox:musl'
+          command:
+            - /bin/sh
+          args:
+            - '-c'
+            - cp -rf /etc/organizations/peerOrganizations/org2.company.com/peers/peer1-org2/* /etc/hyperledger/fabric && cp -rf /etc/config/org2/core.yaml /etc/hyperledger/fabric/core.yaml && sleep 10
+          resources: {}
+          volumeMounts:
+            - name: cce-obs-order-mgmt-deletable
+              mountPath: /etc/hyperledger/fabric
+              subPath: meta/org2/peer1-org2
+            - name: cce-obs-order-mgmt-fixed
+              mountPath: /etc/organizations
+              subPath: organizations
+            - name: cce-obs-order-mgmt-variable
+              mountPath: /etc/config
+              subPath: config
+      containers:
+        - name: peer1-org2
+          image: 'swr.cn-east-2.myhuaweicloud.com/diveotech/fabric-peer:2.2.4'
+          command:
+            - peer
+            - node
+            - start
+          # command:
+          #   - /bin/sh
+          #   - '-c'
+          #   - sleep 10000
+          workingDir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+          env:
+            - name: CORE_PEER_GOSSIP_ORGLEADER
+              valueFrom:
+                configMapKeyRef:
+                  name: peer-base
+                  key: CORE_PEER_GOSSIP_ORGLEADER
+            - name: CORE_PEER_GOSSIP_USELEADERELECTION
+              valueFrom:
+                configMapKeyRef:
+                  name: peer-base
+                  key: CORE_PEER_GOSSIP_USELEADERELECTION
+            - name: CORE_PEER_PROFILE_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: peer-base
+                  key: CORE_PEER_PROFILE_ENABLED
+            - name: CORE_PEER_TLS_CERT_FILE
+              valueFrom:
+                configMapKeyRef:
+                  name: peer-base
+                  key: CORE_PEER_TLS_CERT_FILE
+            - name: CORE_PEER_TLS_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: peer-base
+                  key: CORE_PEER_TLS_ENABLED
+            - name: CORE_PEER_TLS_KEY_FILE
+              valueFrom:
+                configMapKeyRef:
+                  name: peer-base
+                  key: CORE_PEER_TLS_KEY_FILE
+            - name: CORE_PEER_TLS_ROOTCERT_FILE
+              valueFrom:
+                configMapKeyRef:
+                  name: peer-base
+                  key: CORE_PEER_TLS_ROOTCERT_FILE
+            - name: FABRIC_LOGGING_SPEC
+              valueFrom:
+                configMapKeyRef:
+                  name: peer-base
+                  key: FABRIC_LOGGING_SPEC
+            - name: TZ
+              valueFrom:
+                configMapKeyRef:
+                  name: peer-base
+                  key: TZ
+            - name: CORE_METRICS_PROVIDER
+              valueFrom:
+                configMapKeyRef:
+                  name: peer1-org2
+                  key: CORE_METRICS_PROVIDER
+            - name: CORE_OPERATIONS_LISTENADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: peer1-org2
+                  key: CORE_OPERATIONS_LISTENADDRESS
+            - name: CORE_PEER_ADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: peer1-org2
+                  key: CORE_PEER_ADDRESS
+            - name: CORE_PEER_CHAINCODEADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: peer1-org2
+                  key: CORE_PEER_CHAINCODEADDRESS
+            - name: CORE_PEER_CHAINCODELISTENADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: peer1-org2
+                  key: CORE_PEER_CHAINCODELISTENADDRESS
+            - name: CORE_PEER_GOSSIP_BOOTSTRAP
+              valueFrom:
+                configMapKeyRef:
+                  name: peer1-org2
+                  key: CORE_PEER_GOSSIP_BOOTSTRAP
+            - name: CORE_PEER_GOSSIP_EXTERNALENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: peer1-org2
+                  key: CORE_PEER_GOSSIP_EXTERNALENDPOINT
+            - name: CORE_PEER_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: peer1-org2
+                  key: CORE_PEER_ID
+            - name: CORE_PEER_LISTENADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: peer1-org2
+                  key: CORE_PEER_LISTENADDRESS
+            - name: CORE_PEER_LOCALMSPID
+              valueFrom:
+                configMapKeyRef:
+                  name: peer1-org2
+                  key: CORE_PEER_LOCALMSPID
+          resources: {}
+          volumeMounts:
+            - name: cce-obs-order-mgmt-deletable
+              mountPath: /etc/hyperledger/fabric
+              subPath: meta/org2/peer1-org2
+            - name: cce-obs-order-mgmt-fixed
+              mountPath: /var/hyperledger/production
+              subPath: backup/org2/peer1-org2
+            - name: cce-obs-order-mgmt-variable
+              mountPath: /opt/hyperledger/ccaas_builder
+              subPath: sampleBuilder
+            - name: cce-obs-order-mgmt-variable
+              mountPath: /opt/hyperledger/fabric/external-chaincode
+              subPath: external-chaincode
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - '-c'
+                  - rm -rf  /etc/hyperledger/fabric
+          imagePullPolicy: IfNotPresent
+      imagePullSecrets:
+        - name: default-secret
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - 192.168.9.24

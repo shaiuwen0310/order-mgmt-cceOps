@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: chaincode-orderform-peer0-org1
+  labels:
+    app: chaincode-orderform-peer0-org1
+  namespace: bc-2nd
+  annotations: {}
+spec:
+  selector:
+    app: chaincode-orderform-peer0-org1
+  ports:
+    - name: cce-service-0
+      targetPort: 7052
+      port: 7052
+      protocol: TCP
+  type: ClusterIP
+
+---
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: chaincode-orderform-peer0-org1
+  namespace: bc-2nd
+  labels:
+    appgroup: ''
+    version: v1
+  annotations:
+    description: ''
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chaincode-orderform-peer0-org1
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: chaincode-orderform-peer0-org1
+        version: v1
+    spec:
+      containers:
+        - name: chaincode-orderform-peer0-org1
+          image: 'swr.cn-east-2.myhuaweicloud.com/diveotech/chaincode-orderform:amd64-v1.0.0'
+          command:
+            - chaincode-orderform
+          env:
+            - name: CHAINCODE_ID
+              value: 'orderform_1.0.0:9b541e59e80ffb5cf535b196d6ba1b5b7c4b74976ae8c97c6c001e9648c70cda'
+            - name: CHAINCODE_SERVER_ADDRESS
+              value: '0.0.0.0:7052'
+            - name: TZ
+              value: Asia/Taipei
+          resources: {}
+          imagePullPolicy: IfNotPresent
+      imagePullSecrets:
+        - name: default-secret
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - 192.168.9.24

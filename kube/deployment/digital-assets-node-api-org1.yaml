@@ -1,0 +1,93 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-mgmt-node-api-org1
+  labels:
+    app: order-mgmt-node-api-org1
+  namespace: bc-2nd
+  annotations: {}
+spec:
+  selector:
+    app: order-mgmt-node-api-org1
+  externalTrafficPolicy: Cluster
+  ports:
+    - name: cce-service-0
+      targetPort: 5008
+      port: 5008
+      protocol: TCP
+  type: NodePort
+
+---
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: order-mgmt-node-api-org1
+  namespace: bc-2nd
+  labels:
+    appgroup: ''
+    version: v1
+  annotations:
+    description: ''
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: order-mgmt-node-api-org1
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: order-mgmt-node-api-org1
+        version: v1
+    spec:
+      volumes:
+        - name: cce-obs-order-mgmt-fixed
+          persistentVolumeClaim:
+            claimName: cce-obs-order-mgmt-fixed
+        - name: cce-obs-order-mgmt-variable
+          persistentVolumeClaim:
+            claimName: cce-obs-order-mgmt-variable
+        - name: cce-obs-order-mgmt-deletable
+          persistentVolumeClaim:
+            claimName: cce-obs-order-mgmt-deletable
+      containers:
+        - name: order-mgmt-node-api-org1
+          image: 'swr.cn-east-2.myhuaweicloud.com/diveotech/order-mgmt-node-api:amd64-v1.0.0'
+          command:
+            - pm2-docker
+            - process.yml
+            - '--only'
+            - order-mgmt-node-api
+          env:
+            - name: TZ
+              value: Asia/Taipei
+            - name: NODE_API_PORT
+              value: '5008'
+            - name: GATEWAY_FILE_PATH
+              value: /src/gateway/org1-Network.yaml
+            - name: WALLET_PATH
+              value: /src/wallet
+          resources: {}
+          volumeMounts:
+            - name: cce-obs-order-mgmt-fixed
+              mountPath: /src/wallet
+              subPath: node-api/wallet
+            - name: cce-obs-order-mgmt-variable
+              mountPath: /src/gateway
+              subPath: node-api/gateway
+            - name: cce-obs-order-mgmt-fixed
+              mountPath: /src/organizations
+              subPath: organizations
+          imagePullPolicy: IfNotPresent
+      imagePullSecrets:
+        - name: default-secret
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - 192.168.9.10
